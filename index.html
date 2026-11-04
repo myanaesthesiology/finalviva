@@ -231,6 +231,27 @@ button,select,input,textarea{font-family:inherit}
  .home-verses{padding:8px 10px 12px}
 }
 @media print{.search-suggestions,.search-page-query{display:none!important}}
+/* Scroll-sensitive search visibility and easier-to-tap question navigation (v5). */
+.topbar .top-search{transition:opacity .19s ease,transform .19s ease,visibility .19s ease,max-width .19s ease}
+.topbar.search-hidden .top-search{opacity:0;visibility:hidden;pointer-events:none;transform:translateY(-9px);min-width:0;max-width:0;width:0;flex:0 0 0;overflow:hidden}
+.bank-bottom-nav .nav-step{display:inline-flex;align-items:center;justify-content:center;gap:9px}
+.bank-bottom-nav .nav-arrow{display:inline-block;flex:0 0 auto;font-size:29px;line-height:1;font-weight:900}
+.bank-bottom-nav .nav-chevron{display:inline-block;flex:0 0 auto;min-width:25px;font-size:30px;line-height:1;font-weight:900}
+.bank-bottom-nav .nav-progress{gap:9px}
+@media(max-width:770px){
+ .bank-bottom-nav .nav-step{gap:0}
+ .bank-bottom-nav .nav-step .nav-step-text{display:none}
+ .bank-bottom-nav .nav-arrow{font-size:31px}
+ .bank-bottom-nav .nav-chevron{font-size:32px}
+}
+@media(max-width:600px){
+ .topbar{transition:min-height .19s ease,grid-template-rows .19s ease}
+ .topbar.search-hidden{min-height:0;grid-template-rows:43px 0px;row-gap:0;padding-top:9px;padding-bottom:9px}
+ .topbar.search-hidden .top-search{width:100%;max-width:none;min-width:0;max-height:0;height:0;margin:0;overflow:hidden}
+ .topbar.search-hidden .search-suggestions{display:none!important}
+}
+@media(prefers-reduced-motion:reduce){.topbar,.topbar .top-search{transition:none!important}}
+
 
 .home-recent{margin-top:18px;width:100%}.home-recent .activity-row{max-width:none}
 </style><link rel="manifest" href="./manifest.webmanifest">
