@@ -253,7 +253,7 @@ button,select,input,textarea{font-family:inherit}
 @media(max-width:770px){.bank-bottom-nav{left:0;padding:8px 12px calc(8px + env(safe-area-inset-bottom))}.bank-bottom-row{gap:6px;grid-template-columns:minmax(0,.9fr) minmax(0,1.2fr) minmax(0,.9fr)}.nav-step,.nav-progress{min-height:47px;font-size:12px;padding:7px 4px}.bank-nav-expansion{max-height:47vh}.bank-setting-row{gap:10px}.bank-setting-row>div{flex:1 1 100%}.nav-step span{display:none}.bank-question-number-list{grid-template-columns:repeat(auto-fill,minmax(37px,1fr));gap:6px}.bank-main>.question-card{margin-bottom:15px}}
 </style>
 </head>
-<body><section id="secureGate" class="secure-gate" aria-labelledby="gateTitle"><div class="secure-card"><div class="secure-brand"><div class="secure-mark">V</div><div><strong>VivaLab</strong><small>FINAL ANAESTHESIA VIVA</small></div></div><span class="secure-label">PROTECTED COLLECTION</span><h1 id="gateTitle">Unlock your viva question bank</h1><p>Enter the access password to open your revision library.</p><form id="unlockForm"><label for="unlockPassword">Password</label><input id="unlockPassword" type="password" name="password" autocomplete="current-password" required autofocus><label class="show-password"><input type="checkbox" id="togglePassword"> Show password</label><button id="unlockButton" type="submit">Unlock VivaLab</button></form><p class="gate-feedback" id="unlockStatus" role="status" aria-live="polite"></p><button id="unlockRecovery" type="button" hidden style="background:#e7f2ef;color:#0d605a;font-size:12px;margin-top:10px;min-height:42px">Reset offline cache and reload (keeps saved progress)</button></div></section><div class="app" id="app" hidden>
+<body><section id="secureGate" class="secure-gate" aria-labelledby="gateTitle"><div class="secure-card"><div class="secure-brand"><div class="secure-mark">V</div><div><strong>VivaLab</strong><small>FINAL ANAESTHESIA VIVA</small></div></div><span class="secure-label">PROTECTED COLLECTION</span><h1 id="gateTitle">Unlock your viva question bank</h1><p>Enter the access password to open your revision library.</p><form id="unlockForm"><label for="unlockPassword">Password</label><input id="unlockPassword" type="password" name="password" autocomplete="current-password" required autofocus><label class="show-password"><input type="checkbox" id="togglePassword"> Show password</label><button id="unlockButton" type="submit">Unlock VivaLab</button></form><button id="unlockSkip" type="button" hidden style="background:#e7f2ef;color:#0d605a;font-size:13px;margin-top:12px;min-height:44px">Open with Book 1 only (retry Book 2 later)</button><p class="gate-feedback" id="unlockStatus" role="status" aria-live="polite"></p><button id="unlockRecovery" type="button" hidden style="background:#e7f2ef;color:#0d605a;font-size:12px;margin-top:10px;min-height:42px">Reset offline cache and reload (keeps saved progress)</button></div></section><div class="app" id="app" hidden>
 <aside class="sidebar" id="sidebar"><div class="brand"><div class="brand-mark">V</div><div><strong>VivaLab</strong><small>Final Anaesthesia</small></div></div>
 <div class="nav-label">WORKSPACE</div>
 <button class="nav-btn active" data-view="overview"><span class="nav-ico">▦</span> Overview</button>
@@ -272,17 +272,34 @@ button,select,input,textarea{font-family:inherit}
 const VIVA_SALT=[232, 247, 18, 35, 220, 208, 123, 17, 183, 72, 145, 8, 137, 208, 87, 177];
 const VIVA_ITERATIONS=420000;
 const VIVA_ASSETS={check:'./vault/check.enc',barker2009:'./vault/barker2009.json.enc',podcast2025:'./vault/podcast2025.json.enc'};
-async function fetchEncryptedAsset(path,{fresh=false}={}){
- // A one-time repair bypasses a stale service worker cache. Preserve offline access normally.
- const repair=!!sessionStorage.getItem('vivalab_unlock_repair');
- const bypass=fresh||repair;
- const url=bypass?path+(path.includes('?')?'&':'?')+'repair='+encodeURIComponent('v2-20261104'):path;
- let response;
- try{response=await fetch(url,{cache:bypass?'no-store':'default'});}catch(err){throw Error('Cannot download '+path+'. Check internet access and retry.');}
- if(!response.ok)throw Error('Cannot download '+path+' (HTTP '+response.status+').');
- const bytes=new Uint8Array(await response.arrayBuffer());
- if(bytes.length<29)throw Error('Encrypted file '+path+' is empty or incomplete.');
- return bytes;
+async function fetchEncryptedAsset(path,{fresh=false,signal=null,onProgress=null}={}){
+ const repair=!!sessionStorage.getItem('vivalab_unlock_repair'),bypass=fresh||repair;
+ const url=bypass?path+(path.includes('?')?'&':'?')+'repair=v3-20261104':path;
+ const controller=new AbortController(),abort=()=>controller.abort();
+ if(signal){if(signal.aborted)controller.abort();else signal.addEventListener('abort',abort,{once:true});}
+ let idle;
+ const reset=()=>{clearTimeout(idle);idle=setTimeout(()=>controller.abort(),45000);};reset();
+ try{
+  const response=await fetch(url,{cache:bypass?'no-store':'default',signal:controller.signal});
+  if(!response.ok)throw Error('Cannot download '+path+' (HTTP '+response.status+').');
+  const total=Number(response.headers.get('content-length'))||0;
+  let bytes;
+  if(response.body?.getReader){
+   const reader=response.body.getReader(),chunks=[];let received=0;
+   while(true){
+    const result=await reader.read();if(result.done)break;
+    if(result.value?.length){chunks.push(result.value);received+=result.value.length;reset();onProgress?.(received,total);}
+   }
+   bytes=new Uint8Array(received);let offset=0;
+   for(const chunk of chunks){bytes.set(chunk,offset);offset+=chunk.length;}
+  }else{bytes=new Uint8Array(await response.arrayBuffer());onProgress?.(bytes.length,total);}
+  if(bytes.length<29)throw Error('Encrypted file '+path+' is empty or incomplete.');
+  return bytes;
+ }catch(err){
+  if(err.name==='AbortError')throw Error(signal?.aborted?'Download skipped.':'Download stalled. Check connectivity or open Book 1 only.');
+  if(err instanceof TypeError)throw Error('Cannot download '+path+'. Check internet connection or reset offline cache.');
+  throw err;
+ }finally{clearTimeout(idle);if(signal)signal.removeEventListener('abort',abort);}
 }
 function bytesToBase64(bytes){let s='';for(let n=0;n<bytes.length;n+=8192)s+=String.fromCharCode(...bytes.subarray(n,n+8192));return btoa(s);}
 function base64ToBytes(s){return Uint8Array.from(atob(s),c=>c.charCodeAt(0));}
@@ -292,13 +309,33 @@ async function decryptBuffer(path,key,options={}){
  return crypto.subtle.decrypt({name:'AES-GCM',iv:bytes.slice(0,12)},key,bytes.slice(12));
 }
 async function loadVivaLibrary(key,show){
- const next=async message=>{show(message);await new Promise(resolve=>requestAnimationFrame(resolve));};
+ const next=async message=>{show(message);await new Promise(resolve=>setTimeout(resolve,0));};
+ const skip=document.getElementById('unlockSkip');
+ const progress=(label)=>(n,total)=>show(label+': '+(n/1048576).toFixed(1)+(total?' / '+(total/1048576).toFixed(1)+' MB':' MB')+' downloaded…');
  await next('Password accepted. Loading reference 1 of 2…');
- try{window.BUILT_IN=JSON.parse(new TextDecoder().decode(await decryptBuffer(VIVA_ASSETS.barker2009,key)));}
- catch(err){throw Error('Reference 1 could not be loaded: '+(err.name==='OperationError'?'Encrypted file does not match this website version. Try resetting offline cache.':err.message));}
+ try{
+  const raw=await decryptBuffer(VIVA_ASSETS.barker2009,key,{onProgress:progress('Reference 1')});
+  await next('Opening reference 1…');
+  window.BUILT_IN=JSON.parse(new TextDecoder().decode(raw));
+ }catch(err){throw Error('Reference 1 could not be loaded: '+(err.name==='OperationError'?'Encrypted data mismatch; reset offline cache.':err.message));}
  await next('Loading reference 2 of 2…');
- try{window.NEW_BOOK=JSON.parse(new TextDecoder().decode(await decryptBuffer(VIVA_ASSETS.podcast2025,key)));}
- catch(err){throw Error('Reference 2 could not be loaded: '+(err.name==='OperationError'?'Encrypted file does not match this website version. Try resetting offline cache.':err.message));}
+ const controller=new AbortController();
+ let chooseSkip;
+ const skipped=new Promise(resolve=>{chooseSkip=()=>{controller.abort();resolve({skipped:true});};});
+ skip.hidden=false;skip.onclick=chooseSkip;
+ const loading=(async()=>{
+  const raw=await decryptBuffer(VIVA_ASSETS.podcast2025,key,{signal:controller.signal,onProgress:progress('Reference 2')});
+  await next('Opening reference 2…');
+  return JSON.parse(new TextDecoder().decode(raw));
+ })().then(book=>({book}),error=>({error}));
+ const outcome=await Promise.race([loading,skipped]);
+ skip.hidden=true;skip.onclick=null;
+ if(outcome.book){window.NEW_BOOK=outcome.book;window.vivaPartial=false;}
+ else{
+  window.vivaPartial=true;window.vivaSecondError=outcome.error?.message||'Skipped by user';
+  window.NEW_BOOK={source:{title:'Dr Podcast Scripts for the Final FRCA (not loaded)',authors:'',year:'2025'},cases:[],questions:[]};
+  await next('Book 2 unavailable. Opening Book 1…');
+ }
  const STORE_KEY='vivalab_final_anaesthesia_v1';let saved={};
  await next('Restoring saved progress…');
  try{
@@ -310,6 +347,13 @@ async function loadVivaLibrary(key,show){
  await next('Starting VivaLab…');
  await new Promise((resolve,reject)=>{let s=document.createElement('script');s.src='./app.js';s.onload=resolve;s.onerror=()=>reject(Error('Unable to load app.js. Try resetting offline cache.'));document.body.append(s);});
  document.getElementById('app').hidden=false;document.getElementById('secureGate').hidden=true;document.getElementById('unlockPassword').value='';
+ if(window.vivaPartial){
+  const bar=document.createElement('div');bar.setAttribute('role','status');
+  bar.style.cssText='padding:12px 16px;background:#fff3d6;color:#654b15;display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;border-bottom:1px solid #e8ce82;font:13px system-ui';
+  const label=document.createElement('span');label.textContent='Book 1 is available. Book 2 did not finish loading. '+(window.vivaSecondError||'');
+  const retry=document.createElement('button');retry.type='button';retry.textContent='Retry both books';retry.style.cssText='background:white;border:1px solid #b88a2b;border-radius:8px;color:#654b15;padding:9px 12px;font:700 12px system-ui';retry.onclick=()=>location.reload();
+  bar.append(label,retry);document.getElementById('app').prepend(bar);
+ }
  sessionStorage.removeItem('vivalab_unlock_repair');
 }
 if(!globalThis.isSecureContext||!crypto?.subtle){document.getElementById('unlockStatus').textContent='Open VivaLab from its HTTPS website to unlock this library.';document.getElementById('unlockButton').disabled=true;}
