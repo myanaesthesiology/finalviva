@@ -231,27 +231,49 @@ button,select,input,textarea{font-family:inherit}
  .home-verses{padding:8px 10px 12px}
 }
 @media print{.search-suggestions,.search-page-query{display:none!important}}
-/* Scroll-sensitive search visibility and easier-to-tap question navigation (v5). */
-.topbar .top-search{transition:opacity .19s ease,transform .19s ease,visibility .19s ease,max-width .19s ease}
-.topbar.search-hidden .top-search{opacity:0;visibility:hidden;pointer-events:none;transform:translateY(-9px);min-width:0;max-width:0;width:0;flex:0 0 0;overflow:hidden}
-.bank-bottom-nav .nav-step{display:inline-flex;align-items:center;justify-content:center;gap:9px}
-.bank-bottom-nav .nav-arrow{display:inline-block;flex:0 0 auto;font-size:29px;line-height:1;font-weight:900}
-.bank-bottom-nav .nav-chevron{display:inline-block;flex:0 0 auto;min-width:25px;font-size:30px;line-height:1;font-weight:900}
+/* v6: stable search panel and aligned question navigation. */
+.bank-section-toggle{min-height:62px}
+.bank-section-toggle>.bank-expand-icon{
+ display:inline-grid;place-items:center;flex:0 0 42px;
+ width:42px;height:42px;font-size:34px;font-weight:900;line-height:1;color:var(--accent)
+}
+.bank-bottom-nav .nav-step{display:inline-flex;align-items:center;justify-content:center;gap:8px}
+.bank-bottom-nav .nav-arrow{
+ display:inline-flex;align-items:center;justify-content:center;
+ width:44px;height:34px;flex:0 0 44px;
+ font:900 28px/1 ui-monospace, "Roboto Mono", "Courier New", monospace;
+ letter-spacing:-3px;vertical-align:middle
+}
+.bank-bottom-nav .nav-chevron{display:inline-grid;place-items:center;flex:0 0 25px;min-width:25px;font-size:30px;line-height:1;font-weight:900}
 .bank-bottom-nav .nav-progress{gap:9px}
 @media(max-width:770px){
  .bank-bottom-nav .nav-step{gap:0}
  .bank-bottom-nav .nav-step .nav-step-text{display:none}
- .bank-bottom-nav .nav-arrow{font-size:31px}
+ .bank-bottom-nav .nav-arrow{font-size:30px}
  .bank-bottom-nav .nav-chevron{font-size:32px}
 }
+.topbar .top-search{transition:opacity .19s ease,transform .19s ease,visibility .19s ease}
+.topbar.search-hidden .top-search{opacity:0;visibility:hidden;pointer-events:none;transform:translateY(-12px)}
 @media(max-width:600px){
- .topbar{transition:min-height .19s ease,grid-template-rows .19s ease}
- .topbar.search-hidden{min-height:0;grid-template-rows:43px 0px;row-gap:0;padding-top:9px;padding-bottom:9px}
- .topbar.search-hidden .top-search{width:100%;max-width:none;min-width:0;max-height:0;height:0;margin:0;overflow:hidden}
- .topbar.search-hidden .search-suggestions{display:none!important}
+ .topbar{height:61px;min-height:61px;grid-template-rows:43px;gap:0 8px;padding:9px 12px}
+ .topbar>.top-search{
+  position:absolute;grid-column:auto;grid-row:auto;
+  top:100%;left:0;right:0;width:auto;min-width:0;max-width:none;
+  margin:0;padding:6px 12px 8px;flex:none;background:var(--panel);
+  border-bottom:1px solid var(--border);box-shadow:0 8px 16px rgba(6,32,44,.07);
+  transform:translateY(0);overflow:visible
+ }
+ .topbar.search-hidden>.top-search{
+  width:auto;max-width:none;min-width:0;height:auto;max-height:none;
+  padding:6px 12px 8px;transform:translateY(-12px);overflow:visible
+ }
+ .workspace>.main{padding-top:68px}
+ .topbar .search-suggestions{
+  position:absolute;top:calc(100% + 6px);left:12px;right:12px;
+  width:auto;max-height:min(53dvh,465px)
+ }
 }
-@media(prefers-reduced-motion:reduce){.topbar,.topbar .top-search{transition:none!important}}
-
+@media(prefers-reduced-motion:reduce){.topbar .top-search{transition:none!important}}
 
 .home-recent{margin-top:18px;width:100%}.home-recent .activity-row{max-width:none}
 </style><link rel="manifest" href="./manifest.webmanifest">
