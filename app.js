@@ -282,7 +282,7 @@ function bankBottomNavigator(c,selQs){
  if(!c||!selQs.length)return '';
  const index=Math.max(0,selQs.indexOf(S.selectedQ)), open=S.navExpanded;
  const questions=selQs.map((id,i)=>`<button class="q-dot ${id===S.selectedQ?'active':''} ${progress[id]?.seen?'done':''}" data-qid="${H(id)}" aria-label="Go to question ${i+1}" title="${H(qById.get(id)?.q||'')}">${i+1}</button>`).join('');
- return `<nav class="bank-bottom-nav" aria-label="Question navigation"><div class="bank-bottom-row"><button class="nav-step" data-action="bankPrev" ${index===0?'disabled':''} aria-label="Previous question">← <span>Previous</span></button><button class="nav-progress" data-action="toggleQuestionNav" aria-expanded="${open}"><span id="bankNavCounter">Question ${index+1} / ${selQs.length}</span><span aria-hidden="true">${open?'▾':'▴'}</span></button><button class="nav-step" data-action="bankNext" ${index===selQs.length-1?'disabled':''} aria-label="Next question"><span>Next</span> →</button></div>${open?`<div class="bank-nav-expansion"><div class="bank-setting-row"><div><span class="bank-setting-label">Question layout</span><div class="bank-choice"><button class="${S.bankView==='single'?'selected':''}" data-bank-view="single">One by one</button><button class="${S.bankView==='continuous'?'selected':''}" data-bank-view="continuous">Continuous</button></div></div><div><span class="bank-setting-label">Answers</span><div class="bank-choice"><button class="${S.bankReveal==='manual'?'selected':''}" data-bank-reveal="manual">Reveal manually</button><button class="${S.bankReveal==='all'?'selected':''}" data-bank-reveal="all">Reveal all</button></div></div></div><div class="bank-question-number-list" aria-label="Choose question">${questions}</div></div>`:''}</nav>`;
+ return `<nav class="bank-bottom-nav" aria-label="Question navigation"><div class="bank-bottom-row"><button class="nav-step" type="button" data-action="bankPrev" ${index===0?'disabled':''} aria-label="Previous question"><span class="nav-arrow" aria-hidden="true">←</span><span class="nav-step-text">Previous</span></button><button class="nav-progress" type="button" data-action="toggleQuestionNav" aria-label="${open?'Collapse':'Expand'} question navigator" aria-expanded="${open}"><span id="bankNavCounter">Question ${index+1} / ${selQs.length}</span><span class="nav-chevron" aria-hidden="true">${open?'▾':'▴'}</span></button><button class="nav-step" type="button" data-action="bankNext" ${index===selQs.length-1?'disabled':''} aria-label="Next question"><span class="nav-step-text">Next</span><span class="nav-arrow" aria-hidden="true">→</span></button></div>${open?`<div class="bank-nav-expansion"><div class="bank-setting-row"><div><span class="bank-setting-label">Question layout</span><div class="bank-choice"><button class="${S.bankView==='single'?'selected':''}" data-bank-view="single">One by one</button><button class="${S.bankView==='continuous'?'selected':''}" data-bank-view="continuous">Continuous</button></div></div><div><span class="bank-setting-label">Answers</span><div class="bank-choice"><button class="${S.bankReveal==='manual'?'selected':''}" data-bank-reveal="manual">Reveal manually</button><button class="${S.bankReveal==='all'?'selected':''}" data-bank-reveal="all">Reveal all</button></div></div></div><div class="bank-question-number-list" aria-label="Choose question">${questions}</div></div>`:''}</nav>`;
 }
 
 function renderQuestion(q,index,total,context){if(!q)return'<div class="card empty-state">Question not available.</div>';let p=progress[q.id]||{};let revealed=context==='bank'?(S.bankReveal==='all'||(S.bankView==='continuous'?!!S.bankOpenQ[q.id]:S.reveal)):S.reveal;let hasQuick=Array.isArray(q.quick)&&q.quick.length>0;let displayQuick=S.answerMode==='quick'&&hasQuick;return`<article class="card question-card" id="viva-q-${H(q.id)}" data-card-id="${H(q.id)}"><div class="question-overline"><span>${context==='mock'?'MOCK VIVA':context==='study'?'STUDY CARD':'VIVA QUESTION'} ${index} / ${total}</span><div class="actions"><span class="tiny muted">${H(q.source===SOURCE_ID?'Barker et al. (2009)':q.source==='podcast2025'?'Leslie et al. (2025)':findSource(q.source))}, p. ${H(q.page||'—')}</span><button class="icon-btn" data-action="bookmark" data-q-target="${H(q.id)}" title="Bookmark" aria-label="Bookmark question" style="height:32px;min-height:32px;width:32px;min-width:32px">${p.bookmark?'★':'☆'}</button></div></div><h2 class="question-title">${H(q.q)}</h2>${!revealed?`<div class="answer-placeholder"><div style="font-size:30px;color:var(--accent)">◈</div><strong>Prepare your spoken answer</strong><p>Lead with your priorities, give a structured plan, and justify your management.</p>${btn('reveal','Reveal answer','btn-primary',`data-q-target="${H(q.id)}" aria-controls="viva-answer-${H(q.id)}" aria-expanded="false"`)}</div>`:`<div class="answer-frame" id="viva-answer-${H(q.id)}"><div class="section-head"><h3>${displayQuick?'Opening cues':'Source-derived answer'}</h3><div class="answer-mode"><button data-answer-mode="quick" data-q-target="${H(q.id)}" class="${displayQuick?'active':''}" ${!hasQuick?'disabled title="No quick cues available for this question"':''}>Quick cues</button><button data-answer-mode="full" data-q-target="${H(q.id)}" class="${!displayQuick?'active':''}">Full answer</button></div></div>${displayQuick&&hasQuick?`<ol class="answer-cues">${q.quick.slice(0,9).map(p=>`<li>${H(p)}</li>`).join('')}</ol>`:`<div class="answer-content">${sourceAnswerHtml(q)}</div>`}</div>`}
@@ -411,6 +411,50 @@ function getSafeCase(id){return caseById.get(id)}
 document.addEventListener('click',e=>{let target=e.target.closest('[data-bank-view],[data-bank-reveal],[data-view],[data-action],[data-type],[data-case],[data-qid],[data-rate],[data-answer-mode],[data-pdf],[data-mock-mode],[data-mock-case],[data-go-q],[data-resume-session],[data-search-case],.zoomable-figure,[data-book]');if(!target)return;if(target.classList.contains('zoomable-figure')){openImage(target.src,target.alt);return}if(target.dataset.bankView){S.bankView=target.dataset.bankView;prefs.bankView=S.bankView;S.bankOpenQ={};S.navExpanded=true;persist();renderPreservingScroll();return}if(target.dataset.bankReveal){S.bankReveal=target.dataset.bankReveal;prefs.bankReveal=S.bankReveal;S.navExpanded=true;persist();renderPreservingScroll();return}if(target.dataset.qTarget&&S.view==='bank'){S.selectedQ=target.dataset.qTarget;}if(target.dataset.book){openPdf(1,target.dataset.book);return}if(target.dataset.resumeSession){resumeSession(target.dataset.resumeSession);return}if(target.dataset.searchCase){openSearchCase(target.dataset.searchCase,target.dataset.searchQ);return}if(target.dataset.action==='closeModalOuter'&&e.target!==target)return;if(target.dataset.view){go(target.dataset.view);return}if(target.dataset.type){S.type=target.dataset.type;render();return}if(target.dataset.case){saveHistoryScroll();S.selectedCase=target.dataset.case;S.selectedQ=getSafeCase(S.selectedCase)?.qids[0];S.reveal=false;S.bankOpenQ={};S.bankCollapsed=isMobile();if(S.view!=='bank')go('bank');else{pushNavState(false);render();noteBrowseSelection()};scrollToBankContent();return}if(target.dataset.qid){jumpBankQuestion(target.dataset.qid);return}if(target.dataset.rate){storeRating(target.dataset.rate);return}if(target.dataset.answerMode){const cardQ=qById.get(target.dataset.qTarget||S.selectedQ);if(target.dataset.answerMode==='quick'&&!cardQ?.quick?.length)return;S.answerMode=target.dataset.answerMode;if(S.view==='bank'&&S.bankView==='continuous')renderPreservingScroll();else render();return}if(target.dataset.pdf){openPdf(Number(target.dataset.pdf),target.dataset.pdfSource||'barker2009');return}if(target.dataset.mockMode){startMock(target.dataset.mockMode);return}if(target.dataset.mockCase){S.mock.shortIdx=Number(target.dataset.mockCase);S.mock.qIndex=0;S.reveal=false;render();return}if(target.dataset.goQ){let q=qById.get(target.dataset.goQ);if(q)openSearchCase(q.caseId,q.id);return}if(target.dataset.action)handleAction(target.dataset.action,target.dataset.qTarget||target.closest('[data-card-id]')?.dataset.cardId||null)});
 document.addEventListener('submit',e=>{if(e.target.id==='addForm'){e.preventDefault();saveCustom(e.target)}else if(e.target.id==='noteForm'){e.preventDefault();let q=currentQ();if(q){notes[q.id]=new FormData(e.target).get('note');persist();closeModal();if(S.view==='bank'&&S.bankView==='continuous')renderPreservingScroll();else render();toast('Note saved')}}});
 document.addEventListener('change',e=>{let t=e.target;if(t.id==='sourceFilter'){S.source=t.value;S.type='all';S.category='all';S.bankCollapsed=false;render()}else if(t.id==='catFilter'){S.category=t.value;render()}else if(t.id==='statusFilter'){S.status=t.value;render()}else if(t.id==='studyKind'){S.studyKind=t.value}else if(t.id==='studyLength'){S.studyLength=Number(t.value)}else if(t.id==='studyWeak'){S.studyWeak=t.checked}else if(t.id==='settingTheme'){prefs.theme=t.value;prefs.explicitTheme=true;applyPrefs();persist();render()}else if(t.id==='settingAccent'){prefs.accent=t.value;applyPrefs();persist();render()}else if(t.id==='settingFont'){prefs.font=Number(t.value);applyPrefs();persist();render()}else if(t.id==='importFile'){importFile(t.files?.[0]);t.value=''}});
+
+// Hide the search row on downward scrolling; reveal it again on upward scrolling.
+// Ignore scroll jitter and keep search visible while a user is typing.
+const vivaHeader=document.querySelector('.topbar');
+let vivaLastScrollY=Math.max(0,window.scrollY),vivaScrollTick=false;
+function updateVivaSearchVisibility(){
+ vivaScrollTick=false;
+ const y=Math.max(0,window.scrollY),dy=y-vivaLastScrollY;
+ vivaLastScrollY=y;
+ if(!vivaHeader)return;
+ if(y<70||document.activeElement?.closest('#globalSearchForm')||document.querySelector('#searchSuggestions:not([hidden])')){
+  vivaHeader.classList.remove('search-hidden');return;
+ }
+ if(dy>7&&y>115)vivaHeader.classList.add('search-hidden');
+ else if(dy< -7)vivaHeader.classList.remove('search-hidden');
+}
+window.addEventListener('scroll',()=>{
+ if(!vivaScrollTick){vivaScrollTick=true;requestAnimationFrame(updateVivaSearchVisibility);}
+},{passive:true});
+document.querySelector('#globalSearchForm')?.addEventListener('focusin',()=>vivaHeader?.classList.remove('search-hidden'));
+function collapseQuestionNavigator(){
+ if(S.view!=='bank'||!S.navExpanded)return;
+ S.navExpanded=false;
+ const nav=document.querySelector('.bank-bottom-nav');
+ if(!nav)return;
+ nav.querySelector('.bank-nav-expansion')?.remove();
+ const toggle=nav.querySelector('.nav-progress');
+ if(toggle){
+  toggle.setAttribute('aria-expanded','false');
+  toggle.setAttribute('aria-label','Expand question navigator');
+  const chev=toggle.querySelector('.nav-chevron');
+  if(chev)chev.textContent='▴';
+ }
+}
+// Registered after the normal delegated click handler, so outside controls still work.
+document.addEventListener('click',event=>{
+ if(S.view==='bank'&&S.navExpanded&&!event.target.closest('.bank-bottom-nav'))collapseQuestionNavigator();
+});
+document.addEventListener('keydown',event=>{
+ if(event.key==='Escape'&&S.view==='bank'&&S.navExpanded&&!document.querySelector('#modalLayer .modal-layer')){
+  collapseQuestionNavigator();
+ }
+});
+
 const headerSearch=document.querySelector('#globalSearch');
 headerSearch.addEventListener('input',e=>{S.globalQuery=e.target.value;searchSuggestions()});
 headerSearch.addEventListener('focus',()=>searchSuggestions());
