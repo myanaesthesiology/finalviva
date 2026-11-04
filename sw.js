@@ -1,4 +1,4 @@
-const CACHE_NAME="vivalab-secure-9a6047dafa";
+const CACHE_NAME="vivalab-secure-unlockfix-v2-20261104";
 const PRECACHE=["./index.html", "./app.js", "./manifest.webmanifest", "./vault/check.enc", "./vault/barker2009.json.enc", "./vault/podcast2025.json.enc", "./vault/barker2009.pdf.enc", "./vault/podcast2025.pdf.enc", "./icons/icon-192.png", "./icons/icon-512.png", "./icons/icon-maskable-512.png", "./icons/apple-touch-icon.png"];
 const ASSETS=new Set(PRECACHE.map(p=>new URL(p,self.registration.scope).href));
 self.addEventListener('install',event=>{event.waitUntil(caches.open(CACHE_NAME).then(c=>c.addAll(PRECACHE)).then(()=>self.skipWaiting()))});
