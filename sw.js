@@ -1,4 +1,4 @@
-const CACHE_NAME="vivalab-secure-scrollnav-v5-20261104";
+const CACHE_NAME="vivalab-secure-detailsnav-v6-20261105";
 const PRECACHE=["./index.html","./app.js","./manifest.webmanifest","./vault/check.enc","./icons/icon-192.png","./icons/icon-512.png","./icons/icon-maskable-512.png","./icons/apple-touch-icon.png"];
 const ON_DEMAND=["./vault/barker2009.json.enc","./vault/podcast2025.json.enc","./vault/barker2009.pdf.enc","./vault/podcast2025.pdf.enc"];
 const ASSETS=new Set([...PRECACHE,...ON_DEMAND].map(p=>new URL(p,self.registration.scope).href));
